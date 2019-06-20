@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""Boilerplate Training code.
+
+Sets up commonly used arguments, model / dataloader / optimizer / scheduler
+"""
 from os import path
 import argparse
 import logging
@@ -11,6 +16,9 @@ from torch.nn import utils
 from torch import optim
 
 from model_saver import CheckPoint
+# TODO: change this
+from model.foo_model import FooModel
+from dataset.bar_dataset import BarDataset
 
 logging.basicConfig(level='INFO',
                     format='%(asctime)s %(message)s',
@@ -46,7 +54,7 @@ def main(args):
 
     # Setup default values
     # TODO: setup model
-    model = Model().to(device)
+    model = FooModel().to(device)
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = optim.lr_scheduler.StepLR(optimizer,
@@ -67,7 +75,7 @@ def main(args):
     #################################
     # -- setup datasets
     # TODO: setup dataset
-    dataset = Dataset()
+    dataset = BarDataset()
     dataloader = DataLoader(dataset)
 
     #####################
@@ -83,13 +91,17 @@ def main(args):
             message = '[Training] Step: {:06d}, Loss: {:.04f})'
             logging.info(message.format(total_step, loss.item()))
 
+            # reset optimizer (and clear out gradients to be applied)
             optimizer.zero_grad()
+
+            # compute gradient
             loss.backward()
+
             # clip gradient if grad_clip is given
             if(grad_clip):
                 utils.clip_grad_norm_(model.parameters(), grad_clip)
 
-            # update optimizer
+            # update optimizer (and actually apply gradients)
             optimizer.step()
             total_step += 1
 
@@ -103,26 +115,29 @@ def main(args):
                 CheckPoint.save(checkpoint_path, model, optimizer, scheduler, total_step, epoch)
                 CheckPoint.save(latest_checkpoint_path, model, optimizer, scheduler, total_step, epoch)
 
-                # write historgram
+                # write historgram (optional, NOT recommended)
                 for name, param in model.named_parameters():
                     writer.add_histogram(name, param.clone().cpu().data.numpy(), total_step)
-
-
     writer.close()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    # checkpoint related arguments
     parser.add_argument('--run-name', type=str, required=True, help='theme of this run')
-    parser.add_argument('--dataset-dir', type=str, required=True, help='Path of Dataset')
-    parser.add_argument('--gpu', type=int, default=None, help='GPU ID used for this run. Default=CPU')
     parser.add_argument('--checkpoint-path', type=str, default='./CheckPoint/', help='Path of checkpoint')
     parser.add_argument('--resume', dest='resume', action='store_true', help='Resume from previous model')
     parser.add_argument('--no-resume', dest='resume', action='store_false', help='Do not Resume from previous model')
     parser.add_argument('--save-step', type=int, default=5000, help='Recurring number of steps for saving model')
+
+    # environment related arguments
+    parser.add_argument('--dataset-dir', type=str, required=True, help='Path of Dataset')
+    parser.add_argument('--gpu', type=int, default=None, help='GPU ID used for this run. Default=CPU')
+
+    # learning step related arguments
     parser.add_argument('--epochs', type=int, default=50000, help='Number of Epochs to run')
     parser.add_argument('--learning-rate', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--gradient-clip', type=float, default=None, help='learning rate')
+    parser.add_argument('--gradient-clip', type=float, default=None, help='Clips gradient. None do not clip')
     parser.add_argument('--scheduler-step', type=int, default=2000, help='Scheduler step index value')
     parser.add_argument('--scheduler-end', type=int, default=10000, help='Scheduler final step value')
     parser.add_argument('--scheduler-gamma', type=float, default=0.2, help='Scheduler step update ratio')

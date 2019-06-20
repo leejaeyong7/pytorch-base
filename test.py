@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""Boilerplate Testing code.
+
+Sets up commonly used arguments, model / dataloader
+"""
 from os import path
 import argparse
 import logging
@@ -11,6 +16,9 @@ from torch.nn import utils
 from torch import optim
 
 from model_saver import CheckPoint
+# TODO: change this
+from model.foo_model import FooModel
+from dataset.bar_dataset import BarDataset
 
 logging.basicConfig(level='INFO',
                     format='%(asctime)s %(message)s',
@@ -32,7 +40,7 @@ def main(args):
 
     # Setup default values
     # TODO: setup model
-    model = Model().to(device)
+    model = FooModel().to(device)
     model.eval()
 
     # load from previous checkpoint if exists
@@ -45,7 +53,7 @@ def main(args):
     #################################
     # -- setup datasets
     # TODO: setup dataset
-    dataset = Dataset()
+    dataset = BarDataset()
     dataloader = DataLoader(dataset)
 
     #####################
